@@ -1,412 +1,435 @@
-import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+// ========== HUGGING FACE INITIALIZATION ==========
+let apiToken = null;
+let currentImageFile = null;
 
-// ⚠️ NEVER hardcode your API key here.
-// Each user enters their own key — it's stored only in their browser.
-let model = null;
-let genAI = null;
-
-function initializeGemini(apiKey) {
-    if (!apiKey || apiKey.trim() === '') {
-        console.error("Gemini API key is not set");
-        return false;
-    }
+function validateAndSaveToken(token) {
     try {
-        genAI = new GoogleGenerativeAI(apiKey);
-        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // flash = free tier friendly
-        localStorage.setItem('gemini_api_key', apiKey);
-        console.log("✓ Gemini AI initialized successfully!");
+        // Validate token format
+        if (!token || token.trim().length === 0) {
+            updateTokenStatus('✗ Token is empty. Please paste your token', 'error');
+            console.error('Token is empty');
+            return false;
+        }
+
+        if (!token.startsWith('hf_')) {
+            updateTokenStatus('✗ Invalid format. Token must start with "hf_"', 'error');
+            console.error('Token format invalid. Must start with hf_');
+            return false;
+        }
+
+        apiToken = token.trim();
+        updateTokenStatus('✓ Connected to Hugging Face', 'success');
+        console.log('✓ Token validated and saved');
         return true;
-    } catch (err) {
-        console.error("Failed to initialize Gemini client", err);
-        model = null;
+    } catch (error) {
+        console.error('Validation error:', error);
+        updateTokenStatus('✗ Token validation failed', 'error');
         return false;
     }
 }
 
-// Try loading saved key from previous session
-const savedKey = localStorage.getItem('gemini_api_key');
-if (savedKey) {
-    initializeGemini(savedKey);
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    let selectedFile = null;
-    let isGenerating = false;
-
-    // UI references
-    const uploadArea = document.getElementById('uploadArea');
-    const uploadPreview = document.getElementById('uploadPreview');
-    const generateBtn = document.getElementById('generateBtn');
-    const optionsPanel = document.getElementById('optionsPanel');
-    const confirmBtn = document.getElementById('confirmBtn');
-    const resultCode = document.getElementById('resultCode');
-    const resultsPanel = document.getElementById('resultsPanel');
-    const copyBtn = document.getElementById('copyBtn');
-
-    // ── Inject API Key UI into the page ──────────────────────────────────────
-    const apiKeyHTML = `
-    <div id="apiKeySection" style="
-        margin: 1.5rem auto;
-        max-width: 500px;
-        padding: 1.2rem 1.5rem;
-        border: 1px solid rgba(0,255,255,0.3);
-        border-radius: 12px;
-        background: rgba(0,255,255,0.05);
-        font-family: 'Space Mono', monospace;
-    ">
-        <p style="font-size:0.75rem; color:#b0b0ff; margin-bottom:0.6rem; text-transform:uppercase; letter-spacing:1px;">
-            🔑 Your Gemini API Key
-        </p>
-        <div style="display:flex; gap:0.5rem;">
-            <input id="apiKeyInput" type="password" placeholder="Paste your key from aistudio.google.com"
-                style="
-                    flex:1; padding:0.6rem 1rem;
-                    background: rgba(0,0,0,0.5);
-                    border: 1px solid rgba(0,255,255,0.4);
-                    border-radius: 8px;
-                    color: #e7e7e7;
-                    font-family: 'Space Mono', monospace;
-                    font-size: 0.8rem;
-                    outline: none;
-                "
-            />
-            <button id="saveApiKeyBtn" style="
-                padding: 0.6rem 1.2rem;
-                background: linear-gradient(90deg, #00ffff, #ff006e);
-                border: none; border-radius: 8px;
-                color: #0a0e27; font-weight: bold;
-                cursor: pointer; font-size: 0.8rem;
-                font-family: 'Orbitron', sans-serif;
-            ">SAVE</button>
-        </div>
-        <p id="apiKeyStatus" style="font-size:0.7rem; margin-top:0.5rem; color:#b0b0ff;"></p>
-        <p style="font-size:0.65rem; color:#666; margin-top:0.4rem;">
-            Your key is saved only in your browser. Never shared. 
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00ffff;">Get a free key →</a>
-        </p>
-    </div>`;
-
-    // Insert API key section before the generator wrapper
-    const generatorWrapper = document.querySelector('.generator-wrapper');
-    if (generatorWrapper) {
-        generatorWrapper.insertAdjacentHTML('beforebegin', apiKeyHTML);
-    }
-
-    // Show saved key status on load
-    const apiKeyStatus = document.getElementById('apiKeyStatus');
-    const apiKeyInput = document.getElementById('apiKeyInput');
-    if (savedKey && model) {
-        apiKeyStatus.textContent = '✓ API key loaded from last session';
-        apiKeyStatus.style.color = '#00ffff';
-    }
-
-    // Save API key button
-    document.getElementById('saveApiKeyBtn')?.addEventListener('click', () => {
-        const key = apiKeyInput?.value?.trim();
-        if (!key) {
-            apiKeyStatus.textContent = '⚠ Please paste your API key first.';
-            apiKeyStatus.style.color = '#ff006e';
-            return;
-        }
-        const ok = initializeGemini(key);
-        if (ok) {
-            apiKeyStatus.textContent = '✓ Key saved! Ready to generate.';
-            apiKeyStatus.style.color = '#00ffff';
-            apiKeyInput.value = '';
-        } else {
-            apiKeyStatus.textContent = '✗ Invalid key. Check and try again.';
-            apiKeyStatus.style.color = '#ff006e';
-        }
-    });
-
-    // ── AOS & Anime init ──────────────────────────────────────────────────────
-    setTimeout(() => {
-        if (typeof AOS !== 'undefined') {
-            AOS.init({ duration: 1000, once: false });
-        }
-    }, 100);
-
-    if (typeof anime !== 'undefined') {
-        anime({
-            targets: '.hero-title',
-            opacity: [0, 1],
-            translateY: [30, 0],
-            duration: 1000,
-            easing: 'easeOutExpo'
-        });
-        anime({
-            targets: '.glow-sphere',
-            opacity: [0.2, 0.4, 0.2],
-            duration: 4000,
-            loop: true,
-            easing: 'easeInOutSine'
-        });
-    }
-
-    // ── Upload interactions ───────────────────────────────────────────────────
-    if (uploadArea) {
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.background = 'rgba(0, 255, 255, 0.2)';
-        });
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.style.background = '';
-        });
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.style.background = '';
-            handleFileSelection(e.dataTransfer.files?.[0]);
-        });
-        uploadArea.addEventListener('click', () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = () => handleFileSelection(input.files?.[0]);
-            input.click();
-        });
-
-        // FIX: paste must be on window, not uploadArea, to actually capture clipboard
-        window.addEventListener('paste', async (e) => {
-            const items = e.clipboardData?.items;
-            if (!items) return;
-            for (let item of items) {
-                if (item.type.startsWith('image/')) {
-                    handleFileSelection(item.getAsFile());
-                    break;
-                }
-            }
-        });
-    }
-
-    // ── Generate button ───────────────────────────────────────────────────────
-    generateBtn?.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (typeof anime !== 'undefined') {
-            anime({ targets: generateBtn, scale: [1, 0.9, 1.05], duration: 300, easing: 'easeInOutQuad' });
-        }
-        optionsPanel.classList.toggle('active');
-        if (optionsPanel.classList.contains('active')) {
-            showNotification('Select your generation options');
-        }
-    });
-
-    // ── Confirm & Generate ────────────────────────────────────────────────────
-    confirmBtn?.addEventListener('click', async () => {
-        if (!selectedFile) {
-            showNotification('Please upload an image first.');
-            return;
-        }
-        if (!model) {
-            showNotification('⚠ No API key set. Please enter your Gemini key above.');
-            document.getElementById('apiKeyInput')?.focus();
-            return;
-        }
-        if (isGenerating) return;
-
-        setGenerating(true);
-
-        const options = {
-            responsive: document.getElementById('responsive').checked,
-            darkMode: document.getElementById('darkMode').checked,
-            animations: document.getElementById('animations').checked,
-            optimization: document.getElementById('optimization').checked
-        };
-
-        try {
-            const css = await generateTailwindFromImage(selectedFile, options);
-            resultCode.textContent = css.trim();
-            setTimeout(() => resultsPanel?.scrollIntoView({ behavior: 'smooth' }), 500);
-            showNotification('✓ Tailwind CSS generated successfully!');
-            optionsPanel.classList.remove('active');
-        } catch (err) {
-            console.error(err);
-            // Show a friendlier error for quota issues
-            const msg = err.message || '';
-            if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('exhausted')) {
-                resultCode.textContent = '⚠ API quota exhausted.\n\nFixes:\n1. Wait a few minutes and try again (free tier has per-minute limits)\n2. Get a new API key from aistudio.google.com\n3. Use a smaller/simpler image to reduce token usage';
-                showNotification('Quota limit hit — see instructions in the output box');
-            } else {
-                resultCode.textContent = 'Error: ' + msg;
-                showNotification('Generation failed: ' + msg);
-            }
-        } finally {
-            setGenerating(false);
-        }
-    });
-
-    // ── Copy button ───────────────────────────────────────────────────────────
-    copyBtn?.addEventListener('click', async () => {
-        try {
-            await navigator.clipboard.writeText(resultCode.textContent);
-            showNotification('✓ Copied to clipboard!');
-        } catch (err) {
-            showNotification('Copy failed — try selecting and copying manually.');
-        }
-    });
-
-    // ── Helper functions ──────────────────────────────────────────────────────
-    function handleFileSelection(file) {
-        if (!file) return;
-        if (!file.type.startsWith('image/')) {
-            showNotification('Please select an image file.');
-            return;
-        }
-        selectedFile = file;
-        showPreview(file);
-        showNotification('Image selected! Ready to generate.');
-    }
-
-    function showPreview(file) {
-        if (!uploadPreview) return;
+// ========== FILE HANDLING ==========
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
-            uploadPreview.src = reader.result;
-            uploadPreview.hidden = false;
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = reject;
+    });
+}
+
+async function compressImage(file) {
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size <= MAX_SIZE) return file;
+
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                const maxDimension = 1200;
+                if (width > height && width > maxDimension) {
+                    height = Math.round(height * (maxDimension / width));
+                    width = maxDimension;
+                } else if (height > maxDimension) {
+                    width = Math.round(width * (maxDimension / height));
+                    height = maxDimension;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                }, 'image/jpeg', 0.8);
+            };
+            img.src = e.target.result;
         };
         reader.readAsDataURL(file);
+    });
+}
+
+// ========== IMAGE UPLOAD ==========
+const uploadZone = document.querySelector('.upload-drop-zone');
+const fileInput = document.getElementById('fileInput');
+
+if (uploadZone) {
+    uploadZone.addEventListener('click', () => fileInput?.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.style.background = 'rgba(0, 255, 255, 0.15)';
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+        uploadZone.style.background = '';
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.style.background = '';
+        const files = e.dataTransfer.files;
+        if (files.length > 0) handleFileSelect(files[0]);
+    });
+}
+
+if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
+    });
+}
+
+function handleFileSelect(file) {
+    if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file');
+        return;
     }
 
-    async function generateTailwindFromImage(file, options) {
-        const imagePart = await fileToGenerativePart(file);
-
-        const optionsText = [
-            options.responsive ? '- Responsive design with Tailwind breakpoints (sm, md, lg, xl)' : '',
-            options.darkMode ? '- Include dark mode support with dark: prefix' : '',
-            options.animations ? '- Include smooth animations and transitions' : '',
-            options.optimization ? '- Optimize for minimal CSS bundle' : ''
-        ].filter(Boolean).join('\n');
-
-        const prompt = `You are an expert Tailwind CSS developer. Analyze this UI/design image and generate complete, production-ready Tailwind CSS code that recreates it.
-
-REQUIREMENTS:
-${optionsText}
-- Use semantic HTML with proper structure
-- Implement proper spacing, colors, and typography
-- Ensure accessibility (ARIA labels, semantic elements)
-- Return ONLY code without any explanations or markdown formatting
-- Include both HTML and Tailwind CSS classes
-- Use flexbox and grid where appropriate
-- Ensure the code is copy-paste ready
-
-Generate the Tailwind CSS code now:`;
-
-        try {
-            const result = await model.generateContent({
-                contents: [{ role: 'user', parts: [{ text: prompt }, imagePart] }]
-            });
-            const text = result.response.text();
-            if (!text || text.length < 20) {
-                throw new Error('Response too short. Try a clearer image.');
-            }
-            return text;
-        } catch (error) {
-            // Re-throw with original message so caller can inspect it
-            throw error;
+    currentImageFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const preview = document.querySelector('.upload-preview');
+        if (preview) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
         }
-    }
+    };
+    reader.readAsDataURL(file);
+}
 
-    async function fileToGenerativePart(file) {
-        const maxSize = 10 * 1024 * 1024;
-        if (file.size > maxSize) {
-            throw new Error(`Image too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max is 10MB.`);
-        }
-        let processedFile = file.size > 2 * 1024 * 1024 ? await compressImage(file) : file;
+// ========== TOKEN MANAGEMENT ==========
+const tokenInput = document.getElementById('tokenInput');
+const saveTokenBtn = document.getElementById('saveTokenBtn');
 
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                resolve({
-                    inlineData: {
-                        data: reader.result.split(',')[1],
-                        mimeType: processedFile.type || 'image/png'
-                    }
-                });
-            };
-            reader.onerror = () => reject(new Error('Failed to read image file'));
-            reader.readAsDataURL(processedFile);
-        });
-    }
+if (tokenInput) {
+    tokenInput.addEventListener('focus', loadToken);
+}
 
-    async function compressImage(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const maxW = 1920, maxH = 1080;
-                    let { width, height } = img;
-                    if (width > maxW || height > maxH) {
-                        const ratio = Math.min(maxW / width, maxH / height);
-                        width = Math.round(width * ratio);
-                        height = Math.round(height * ratio);
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                    canvas.toBlob((blob) => {
-                        if (!blob) { reject(new Error('Compression failed')); return; }
-                        const quality = blob.size > 2 * 1024 * 1024 ? 0.7 : 0.85;
-                        if (quality < 0.85) {
-                            canvas.toBlob(b => resolve(new File([b], file.name, { type: 'image/jpeg' })), 'image/jpeg', quality);
-                        } else {
-                            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-                        }
-                    }, 'image/jpeg', 0.85);
-                };
-                img.onerror = () => reject(new Error('Failed to load image'));
-                img.src = e.target.result;
-            };
-            reader.onerror = () => reject(new Error('Failed to read file'));
-            reader.readAsDataURL(file);
-        });
-    }
-
-    function setGenerating(state) {
-        isGenerating = state;
-        if (confirmBtn) {
-            confirmBtn.disabled = state;
-            confirmBtn.textContent = state ? '⏳ GENERATING...' : 'Confirm & Generate';
-        }
-        if (generateBtn) generateBtn.disabled = state;
-        if (state) {
-            resultsPanel?.classList.add('loading');
-            resultCode.textContent = '⏳ Processing image with AI...\n\nThis may take 10–30 seconds.';
+if (saveTokenBtn) {
+    saveTokenBtn.addEventListener('click', () => {
+        const token = tokenInput?.value.trim();
+        if (token) {
+            localStorage.setItem('hf_api_token', token);
+            updateTokenStatus('✓ Token Saved Successfully!', 'success');
+            setTimeout(() => {
+                updateTokenStatus('', '');
+            }, 2000);
         } else {
-            resultsPanel?.classList.remove('loading');
+            updateTokenStatus('✗ Please enter a token first', 'error');
+        }
+    });
+}
+
+function loadToken() {
+    const token = localStorage.getItem('hf_api_token');
+    if (token && tokenInput?.value === '') {
+        tokenInput.value = token;
+    }
+}
+
+function updateTokenStatus(message, status) {
+    const statusEl = document.querySelector('.token-status');
+    if (statusEl) {
+        statusEl.textContent = message;
+        // Apply different colors for different statuses
+        if (status === 'success') {
+            statusEl.style.color = '#00ffff';
+        } else if (status === 'error') {
+            statusEl.style.color = '#ff006e';
+        } else if (status === 'info') {
+            statusEl.style.color = '#ffbe0b';
+        } else {
+            statusEl.style.color = '#b0b0ff';
         }
     }
+}
 
-    function showNotification(message) {
-        const notification = document.createElement('div');
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed; top: 20px; right: 20px;
-            background: linear-gradient(135deg, #00ffff 0%, #ff006e 100%);
-            color: #0a0e27; padding: 1rem 1.5rem; border-radius: 12px;
-            font-family: 'Orbitron', sans-serif; font-weight: bold; font-size: 13px;
-            z-index: 10000; box-shadow: 0 8px 32px rgba(0,255,255,0.4);
-            border: 2px solid rgba(0,255,255,0.8);
-            animation: slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-        `;
-        document.body.appendChild(notification);
+// ========== IMAGE ANALYSIS ==========
+async function generateImageDescription(file) {
+    if (!apiToken) {
+        alert('❌ Please SAVE your token first!');
+        return;
+    }
+
+    try {
+        updateResultsStatus('🔄 Connecting to AI...', 'loading');
+
+        // Compress image if needed
+        const compressedFile = await compressImage(file);
+        const base64Data = await fileToBase64(compressedFile);
+
+        updateResultsStatus('🔄 Analyzing with AI Vision...', 'loading');
+        console.log('Sending request to Hugging Face API...');
+
+        // Set a timeout of 60 seconds
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+        // Try primary model first (faster)
+        let modelEndpoint = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large';
+        
+        let response = await fetch(modelEndpoint, {
+            headers: { Authorization: `Bearer ${apiToken}` },
+            method: 'POST',
+            body: JSON.stringify({ 
+                inputs: base64Data
+            }),
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('API Error:', errorData);
+            
+            if (response.status === 401) {
+                throw new Error('❌ Invalid Token - Check if token is correct');
+            } else if (response.status === 503) {
+                throw new Error('⏳ Model is loading (first time use takes 1-5 mins). Please wait and try again in 2 minutes');
+            } else if (response.status === 429) {
+                throw new Error('⏳ API is busy. Please wait 1 minute and try again');
+            } else if (response.status === 400) {
+                throw new Error('❌ Invalid image format. Try PNG, JPG, or WebP');
+            } else {
+                throw new Error(`API Error ${response.status}`);
+            }
+        }
+
+        const result = await response.json();
+        console.log('API Response:', result);
+
+        let description = '';
+        
+        // Handle different response formats
+        if (Array.isArray(result) && result.length > 0) {
+            if (result[0]?.generated_text) {
+                description = result[0].generated_text;
+            } else if (typeof result[0] === 'string') {
+                description = result[0];
+            } else if (result[0].error) {
+                throw new Error(result[0].error);
+            }
+        } else if (result.generated_text) {
+            description = result.generated_text;
+        } else if (result[0]?.error) {
+            throw new Error(result[0].error);
+        } else if (typeof result === 'string') {
+            description = result;
+        } else {
+            description = JSON.stringify(result);
+        }
+
+        if (!description || description.trim().length === 0) {
+            throw new Error('❌ Empty response from API. Please try with different image');
+        }
+
+        // Clean up the response
+        if (description.startsWith('<|image_1|>')) {
+            description = description.replace('<|image_1|>', '').trim();
+        }
+
+        displayResults(description);
+        updateResultsStatus('✓ Analysis Complete', 'success');
+    } catch (error) {
+        console.error('Analysis error details:', error);
+        
+        let errorMsg = '❌ Analysis Failed:\n\n';
+
+        if (error.name === 'AbortError') {
+            errorMsg = '⏱️ Request Timeout (over 60 seconds)\n\n→ Model might be loading\n→ This can take 1-5 mins on first use\n→ Try again in 2 minutes';
+        } else if (error.message?.includes('Invalid Token')) {
+            errorMsg = '❌ Invalid API Token\n\n→ Token check karke naya token generate karo\n→ https://huggingface.co/settings/tokens';
+        } else if (error.message?.includes('Invalid image')) {
+            errorMsg = '❌ Invalid Image Format\n\n→ PNG, JPG, ya WebP use karo\n→ Size 5MB se kam hona chahiye';
+        } else if (error.message?.includes('loading') || error.message?.includes('503')) {
+            errorMsg = '⏳ Model Loading Ho Raha Hai\n\n→ Pehli baar use karte time models load hote hain\n→ 2-5 minutes wait karo\n→ Phir dobara try karo\n\nYe ek-ek baar load hote hain, baad mein fast hoga!';
+        } else if (error.message?.includes('busy') || error.message?.includes('429')) {
+            errorMsg = '🚦 API Overloaded\n\n→ Bahut log use kar rahe hain\n→ 1 minute wait karo\n→ Dobara try karo';
+        } else if (error.message?.includes('Network') || error.message?.includes('Failed to fetch')) {
+            errorMsg = '🌐 Network Error\n\n→ Internet connection check karo\n→ VPN on hai to band karo\n→ Page refresh karo (F5)';
+        } else {
+            errorMsg += error.message || 'Unknown error occurred';
+        }
+
+        displayResults(errorMsg);
+        updateResultsStatus('✗ Failed', 'error');
+    }
+}
+
+function updateResultsStatus(status, type = '') {
+    const statusEl = document.querySelector('.results-status');
+    if (statusEl) {
+        statusEl.textContent = status;
+        if (type === 'success') {
+            statusEl.style.color = '#00ffff';
+        } else if (type === 'error') {
+            statusEl.style.color = '#ff006e';
+        } else if (type === 'loading') {
+            statusEl.style.color = '#ffbe0b';
+        }
+    }
+}
+
+function displayResults(text) {
+    const codeBlock = document.querySelector('.code-block') || document.getElementById('resultCode');
+    if (codeBlock) {
+        codeBlock.textContent = text;
+    }
+}
+
+// ========== OPTIONS PANEL ==========
+const initializeBtn = document.getElementById('initializeBtn');
+const confirmBtn = document.getElementById('confirmBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const optionsPanel = document.querySelector('.options-panel');
+
+if (initializeBtn) {
+    initializeBtn.addEventListener('click', async () => {
+        const token = tokenInput?.value.trim();
+        if (!token) {
+            alert('Please enter a Hugging Face API token');
+            return;
+        }
+
+        const success = validateAndSaveToken(token);
+        if (success) {
+            optionsPanel?.classList.add('active');
+        }
+    });
+}
+
+if (confirmBtn) {
+    confirmBtn.addEventListener('click', async () => {
+        if (!currentImageFile) {
+            alert('Please upload an image first');
+            return;
+        }
+
+        optionsPanel?.classList.remove('active');
+        await generateImageDescription(currentImageFile);
+    });
+}
+
+if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+        optionsPanel?.classList.remove('active');
+    });
+}
+
+// ========== COPY RESULTS ==========
+const copyBtn = document.getElementById('copyBtn');
+
+if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+        const codeBlock = document.querySelector('.code-block') || document.getElementById('resultCode');
+        if (codeBlock?.textContent) {
+            try {
+                await navigator.clipboard.writeText(codeBlock.textContent);
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            } catch {
+                alert('Failed to copy to clipboard');
+            }
+        }
+    });
+}
+
+// ========== FEATURE CARDS ANIMATION ==========
+function animateFeatureCards() {
+    const cards = document.querySelectorAll('.feature-card');
+    cards.forEach((card, index) => {
         setTimeout(() => {
-            notification.style.animation = 'slideOut 0.4s ease-in';
-            setTimeout(() => notification.remove(), 400);
-        }, 4000);
-    }
+            card.style.animation = 'fadeInUp 0.6s ease-out forwards';
+        }, index * 100);
+    });
+}
 
-    // Animation styles
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn { from { transform:translateX(500px); opacity:0; } to { transform:translateX(0); opacity:1; } }
-        @keyframes slideOut { from { transform:translateX(0); opacity:1; } to { transform:translateX(500px); opacity:0; } }
-        @keyframes shimmer { 0% { background-position:-1000px 0; } 100% { background-position:1000px 0; } }
-        .results-panel.loading pre {
-            background: linear-gradient(90deg,#0a0e27 25%,#1a1f3a 50%,#0a0e27 75%);
-            background-size: 1000px 100%; animation: shimmer 2s infinite;
-        }
-        #apiKeyInput:focus { border-color: #00ffff !important; box-shadow: 0 0 10px rgba(0,255,255,0.3); }
-    `;
-    document.head.appendChild(style);
+document.addEventListener('DOMContentLoaded', () => {
+    loadToken();
+    animateFeatureCards();
+
+    // Animate title characters
+    const titleText = document.querySelector('.hero-title');
+    if (titleText) {
+        const text = titleText.textContent;
+        titleText.innerHTML = '';
+        [...text].forEach((char, i) => {
+            const span = document.createElement('span');
+            span.className = 'title-char';
+            span.textContent = char;
+            titleText.appendChild(span);
+        });
+    }
 });
+
+// ========== BACK BUTTON ==========
+const backBtn = document.querySelector('.back-btn');
+if (backBtn) {
+    backBtn.href = 'index.html';
+}
+
+// ========== HELP MODAL ==========
+const helpBtn = document.getElementById('helpBtn');
+const helpModal = document.getElementById('helpModal');
+const helpCloseBtn = document.getElementById('helpCloseBtn');
+const helpOkBtn = document.getElementById('helpOkBtn');
+
+if (helpBtn) {
+    helpBtn.addEventListener('click', () => {
+        helpModal?.classList.add('active');
+    });
+}
+
+if (helpCloseBtn) {
+    helpCloseBtn.addEventListener('click', () => {
+        helpModal?.classList.remove('active');
+    });
+}
+
+if (helpOkBtn) {
+    helpOkBtn.addEventListener('click', () => {
+        helpModal?.classList.remove('active');
+    });
+}
+
+// Close help modal when clicking outside
+if (helpModal) {
+    helpModal.addEventListener('click', (e) => {
+        if (e.target === helpModal) {
+            helpModal.classList.remove('active');
+        }
+    });
+}

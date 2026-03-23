@@ -4,132 +4,396 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WINDIFY - Tailwind CSS Generator</title>
+    <title>AIVanguard - Image to Text Generator</title>
     <link rel="stylesheet" href="./home.css">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
 </head>
 
 <body>
-    <!-- Particle Background -->
-    <div id="particles-js"></div>
-    
-    <!-- Back Button -->
-    <a href="./index.html" class="back-btn">← Back</a>
-
-    <!-- Three.js Canvas -->
-    <canvas id="canvas3d"></canvas>
-
-    <!-- Main Container -->
-    <div class="main-container">
-        <!-- Hero Section -->
-        <div class="hero-section">
-            <div class="hero-content" data-aos="fade-up" data-aos-duration="1000">
-                <h1 class="hero-title">
-                    <span class="glow-text"></span>WINDIFY
-                </h1>
-                <h2 class="hero-subtitle">Tailwind CSS Generator</h2>
-                <p class="hero-description">Transform your design into code with AI-powered precision</p>
-            </div>
+    <!-- Cyberpunk Background Scene -->
+    <div class="cyberpunk-bg">
+        <canvas id="canvas3d"></canvas>
+        <div class="animated-robots-container"></div>
+        
+        <!-- Neon Grid Background -->
+        <div class="grid-background"></div>
+        
+        <!-- Animated City Lights -->
+        <div class="city-lights">
+            <div class="building building-1"></div>
+            <div class="building building-2"></div>
+            <div class="building building-3"></div>
+            <div class="building building-4"></div>
+            <div class="building building-5"></div>
         </div>
+        
+        <!-- Glitch Effect Elements -->
+        <div class="glitch-lines"></div>
+        
+        <!-- Particles -->
+        <div id="particles-js"></div>
+    </div>
 
-        <!-- Interactive Generator Box -->
-        <div class="generator-wrapper" data-aos="fade-up" data-aos-duration="1200">
-            <div class="generator-box">
-                <div class="box-header">
-                    <span class="box-icon">⚡</span>
-                    <h3>Upload Design</h3>
+    <!-- Back Button -->
+    <a href="./index.html" class="back-btn">← BACK</a>
+
+    <!-- Help Button -->
+    <button id="helpBtn" class="help-btn" title="Need help? Click here!">
+        <span>?</span>
+    </button>
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="hero-title-wrapper">
+                    <h1 class="hero-title">
+                        <span class="title-char">W</span>
+                        <span class="title-char">I</span>
+                        <span class="title-char">N</span>
+                        <span class="title-char">D</span>
+                        <span class="title-char">I</span>
+                        <span class="title-char">F</span>
+                        <span class="title-char">Y</span>
+                    </h1>
                 </div>
-                
-                <div class="box-content">
-                    <div class="upload-area" id="uploadArea">
-                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        <p class="upload-text">Click, drag & drop, or paste image here</p>
-                        <img id="uploadPreview" class="upload-preview" alt="Uploaded preview" hidden>
+                <h2 class="hero-subtitle">VISION POWERED BY QUANTUM AI</h2>
+                <p class="hero-description">Upload. Analyze. Understand. Powered by Hugging Face Intelligence</p>
+                <div class="hero-accent">
+                    <div class="accent-line"></div>
+                    <span class="accent-text">[ SYSTEM ONLINE ]</span>
+                    <div class="accent-line"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Generator Section -->
+        <section class="generator-section">
+            <div class="section-label">[ IMAGE ANALYSIS MODULE ]</div>
+            
+            <div class="generator-container">
+                <!-- Left Panel - Upload -->
+                <div class="panel left-panel">
+                    <div class="panel-header">
+                        <div class="header-icon">◆</div>
+                        <h3>IMAGE INPUT</h3>
+                        <div class="header-accent"></div>
+                    </div>
+                    
+                    <div class="panel-content">
+                        <div class="upload-drop-zone">
+                            <div class="upload-icon-wrapper">
+                                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <p class="upload-text">DRAG • DROP • PASTE</p>
+                            <p class="upload-subtext">or click to select image</p>
+                            <img class="upload-preview" alt="Preview" hidden>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    </div>
+
+                    <div class="panel-footer">
+                        <button class="btn btn-primary" id="initializeBtn">
+                            <span class="btn-icon">⚡</span>
+                            <span class="btn-text">INITIALIZE</span>
+                            <span class="btn-glow"></span>
+                        </button>
                     </div>
                 </div>
 
-                <div class="box-footer">
-                    <button class="primary-btn" id="generateBtn">
-                        <span class="btn-text">START GENERATING</span>
-                        <span class="btn-glow"></span>
+                <!-- Right Panel - API Key -->
+                <div class="panel right-panel">
+                    <div class="panel-header">
+                        <div class="header-icon">🔐</div>
+                        <h3>ACCESS TOKEN</h3>
+                        <div class="header-accent"></div>
+                    </div>
+                    
+                    <div class="panel-content">
+                        <div class="token-input-wrapper">
+                            <label for="tokenInput" class="token-label">HUGGING FACE API TOKEN</label>
+                            <div class="input-group">
+                                <input 
+                                    id="tokenInput" 
+                                    type="password" 
+                                    placeholder="hf_xxxxxxxxxxxxxxxxxxxx"
+                                    class="token-input"
+                                />
+                                <button id="saveTokenBtn" class="btn btn-secondary" style="white-space: nowrap;">
+                                    <span>💾 SAVE</span>
+                                </button>
+                            </div>
+                            <p class="token-status"></p>
+                        </div>
+                        <p class="token-info">
+                            Get your token at 
+                            <a href="https://huggingface.co/settings/tokens" target="_blank" class="info-link">huggingface.co</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Options Panel -->
+            <div class="options-panel">
+                <div class="options-header">
+                    <h3>[ CONFIRM ANALYSIS ]</h3>
+                </div>
+                <p class="options-message">Ready to analyze your image with Qwen Vision AI?</p>
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <button class="btn btn-primary" id="confirmBtn">
+                        <span class="btn-icon">🚀</span>
+                        <span class="btn-text">LAUNCH ANALYSIS</span>
+                    </button>
+                    <button class="btn btn-secondary" id="cancelBtn">
+                        <span class="btn-icon">⊘</span>
+                        <span class="btn-text">CANCEL</span>
                     </button>
                 </div>
             </div>
+        </section>
 
-            <!-- Options Panel (Hidden by default) -->
-            <div class="options-panel" id="optionsPanel">
-                <h3 class="options-title">Generation Options</h3>
-                <div class="options-grid">
-                    <div class="option-item">
-                        <input type="checkbox" id="responsive" checked>
-                        <label for="responsive">Responsive Design</label>
+        <!-- Results Section -->
+        <section class="results-section">
+            <div class="section-label">[ ANALYSIS RESULTS ]</div>
+            <div class="results-panel" id="resultsPanel">
+                <div class="results-header">
+                    <div class="results-title-wrapper">
+                        <h3 class="results-title">IMAGE DESCRIPTION</h3>
+                        <div class="results-status" id="resultsStatus"></div>
                     </div>
-                    <div class="option-item">
-                        <input type="checkbox" id="darkMode" checked>
-                        <label for="darkMode">Dark Mode Support</label>
-                    </div>
-                    <div class="option-item">
-                        <input type="checkbox" id="animations">
-                        <label for="animations">Include Animations</label>
-                    </div>
-                    <div class="option-item">
-                        <input type="checkbox" id="optimization" checked>
-                        <label for="optimization">Optimize Code</label>
-                    </div>
+                    <button class="btn btn-secondary" id="copyBtn">
+                        <span class="btn-icon">📋</span>
+                        <span>COPY</span>
+                    </button>
                 </div>
-                <button class="secondary-btn" id="confirmBtn">Confirm & Generate</button>
-            </div>
-        </div>
-
-        <!-- Results Panel -->
-        <div class="results-panel" id="resultsPanel">
-            <div class="results-header">
-                <h3>Generated Tailwind CSS</h3>
-                <div class="results-actions">
-                    <button class="secondary-btn" id="copyBtn">Copy CSS</button>
+                <div class="results-content">
+                    <pre id="resultCode" class="code-block">[ WAITING FOR IMAGE ANALYSIS... ]</pre>
                 </div>
             </div>
-            <pre id="resultCode" class="code-block">Upload an image and click “Confirm & Generate” to see the Tailwind output here.</pre>
-        </div>
+        </section>
 
-        <!-- Features Grid -->
-        <div class="features-section" data-aos="fade-up" data-aos-duration="1400">
-            <h2 class="section-title">Why Choose AIVanguard?</h2>
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="section-label">[ CAPABILITIES ]</div>
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">🎨</div>
-                    <h3>Design to Code</h3>
-                    <p>Convert your designs instantly into clean Tailwind CSS</p>
+                    <div class="feature-number">01</div>
+                    <div class="feature-icon">🖼️</div>
+                    <h4>VISION</h4>
+                    <p>Advanced image recognition powered by Qwen's multi-modal AI</p>
                 </div>
                 <div class="feature-card">
+                    <div class="feature-number">02</div>
                     <div class="feature-icon">⚡</div>
-                    <h3>Lightning Fast</h3>
-                    <p>GPU-powered processing for instant results</p>
+                    <h4>SPEED</h4>
+                    <p>GPU-accelerated processing for instant results</p>
                 </div>
                 <div class="feature-card">
+                    <div class="feature-number">03</div>
                     <div class="feature-icon">🤖</div>
-                    <h3>AI Enhanced</h3>
-                    <p>Machine learning optimizations for best practices</p>
+                    <h4>QUANTUM AI</h4>
+                    <p>Next-generation AI models from Hugging Face</p>
                 </div>
                 <div class="feature-card">
+                    <div class="feature-number">04</div>
                     <div class="feature-icon">🎯</div>
-                    <h3>Pixel Perfect</h3>
-                    <p>Accuracy down to the smallest detail</p>
+                    <h4>PRECISION</h4>
+                    <p>Detailed analysis with objects, colors, and context</p>
                 </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Floating Cyber Elements -->
+    <div class="cyber-elements">
+        <div class="cyber-dot dot-1"></div>
+        <div class="cyber-dot dot-2"></div>
+        <div class="cyber-dot dot-3"></div>
+        <div class="cyber-line line-1"></div>
+        <div class="cyber-line line-2"></div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="help-modal" id="helpModal">
+        <div class="help-modal-content">
+            <button class="help-close-btn" id="helpCloseBtn">✕</button>
+            
+            <div class="help-header">
+                <h2>🆘 HELP & TROUBLESHOOTING</h2>
+                <p>Sabke liye complete guide</p>
+            </div>
+
+            <div class="help-sections">
+                <!-- Getting Started Section -->
+                <div class="help-section">
+                    <h3>🚀 Getting Started (Shuru Kaise Karein)</h3>
+                    <div class="help-content">
+                        <ol>
+                            <li><strong>Get API Token:</strong> https://huggingface.co/settings/tokens par jaao</li>
+                            <li><strong>Create New Token:</strong> "New Token" button click karo</li>
+                            <li><strong>Copy Token:</strong> Token copy karo (hf_ se start hota hai)</li>
+                            <li><strong>Paste Here:</strong> "ACCESS TOKEN" panel mein paste karo</li>
+                            <li><strong>Click SAVE:</strong> Save button click karo</li>
+                            <li><strong>Upload Image:</strong> Koi bhi image upload karo</li>
+                            <li><strong>Click INITIALIZE:</strong> "INITIALIZE" button ko click karo</li>
+                            <li><strong>Launch Analysis:</strong> Popup mein "LAUNCH ANALYSIS" click karo</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Errors & Solutions -->
+                <div class="help-section">
+                    <h3>⚠️ Common Errors (Agar Error Aaye)</h3>
+                    <div class="help-content">
+                        <div class="error-item">
+                            <h4>❌ "Token must start with hf_"</h4>
+                            <p><strong>Matlab:</strong> Token galat format mein hai</p>
+                            <p><strong>Fix:</strong> Pura token copy karo jo hf_ se start hota hai. Koi part miss na ho</p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>❌ "Invalid API Token"</h4>
+                            <p><strong>Matlab:</strong> Token expired hai ya galat hai</p>
+                            <p><strong>Fix:</strong><br>
+                                → https://huggingface.co/settings/tokens par jaao<br>
+                                → Purana token delete karo<br>
+                                → Naya token create karo<br>
+                                → Naya token paste karke save karo
+                            </p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>❌ "Service Overloaded" ya "Model Unavailable"</h4>
+                            <p><strong>Matlab:</strong> Hugging Face ka server busy hai</p>
+                            <p><strong>Fix:</strong><br>
+                                → 30 second wait karo<br>
+                                → Page refresh karo (F5)<br>
+                                → Dobara try karo
+                            </p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>❌ "Invalid Image Format"</h4>
+                            <p><strong>Matlab:</strong> Image format galat hai ya bahut bada hai</p>
+                            <p><strong>Fix:</strong><br>
+                                → PNG, JPG, ya WebP format use karo<br>
+                                → Image ka size 5MB se kam hona chahiye<br>
+                                → Dobara try karo
+                            </p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>❌ "Network Error" ya "Failed to fetch"</h4>
+                            <p><strong>Matlab:</strong> Internet connection issue hai</p>
+                            <p><strong>Fix:</strong><br>
+                                → Internet connection check karo<br>
+                                → Agar VPN use kar rahe ho to band karo<br>
+                                → Page refresh karo<br>
+                                → Dobara try karo
+                            </p>
+                        </div>
+
+                        <div class="error-item">
+                            <h4>❌ "CORS Error"</h4>
+                            <p><strong>Matlab:</strong> Browser cross-origin request block kar raha hai</p>
+                            <p><strong>Fix:</strong><br>
+                                → Page ko hard refresh karo (Ctrl+Shift+R)<br>
+                                → Browser cache clear karo<br>
+                                → Dobara try karo
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Troubleshooting Tips -->
+                <div class="help-section">
+                    <h3>💡 Troubleshooting Tips</h3>
+                    <div class="help-content">
+                        <h4>✅ Pehle Yeh Check Karo:</h4>
+                        <ul>
+                            <li>Internet connection is working</li>
+                            <li>Token starts with "hf_" (copy-paste properly)</li>
+                            <li>Image format PNG/JPG/WebP hai</li>
+                            <li>Image size 5MB se kam hai</li>
+                            <li>Browser developer console (F12) mein koi error dikhe to report karo</li>
+                        </ul>
+
+                        <h4>🔍 Browser Console Dekhne Ke Liye:</h4>
+                        <ol>
+                            <li>F12 press karo</li>
+                            <li>"Console" tab click karo</li>
+                            <li>Red error messages dekho</li>
+                            <li>Iss error ko apne help kar sakte ho par detailed information milti hai</li>
+                        </ol>
+
+                        <h4>🔐 Token Security:</h4>
+                        <ul>
+                            <li>Token browser ke localStorage mein save hota hai (sirf tumhara device)</li>
+                            <li>Kisi ko apna token share mat karo❌</li>
+                            <li>Token kisi bhi server par nahi bheja jata ✅</li>
+                            <li>Share karne se pehle private browser tab mein check karo</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- FAQs -->
+                <div class="help-section">
+                    <h3>❓ Frequently Asked Questions (FAQs)</h3>
+                    <div class="help-content">
+                        <div class="faq-item">
+                            <h4>Q: Mera token kahan save hota hai?</h4>
+                            <p>A: Browser ke localStorage mein sirf tumhare device par. Kisi server par nahi</p>
+                        </div>
+
+                        <div class="faq-item">
+                            <h4>Q: Kya free hai ye service?</h4>
+                            <p>A: Haan! Hugging Face free hai. Bas account banana padta hai</p>
+                        </div>
+
+                        <div class="faq-item">
+                            <h4>Q: Multiple images analyze kar sakta hoon?</h4>
+                            <p>A: Bilkul! Ek ek karke images upload aur analyze kar sakta hai</p>
+                        </div>
+
+                        <div class="faq-item">
+                            <h4>Q: Result copy kar ke save kar sakta hoon?</h4>
+                            <p>A: Haan! 📋 COPY button se result copy kar sakta hai</p>
+                        </div>
+
+                        <div class="faq-item">
+                            <h4>Q: Agar fir bhi kaam na kare?</h4>
+                            <p>A: Browser refresh karo (F5) aur dobara try karo. Lagbhag sab issues solve ho jate hain</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Support -->
+                <div class="help-section">
+                    <h3>📞 Support</h3>
+                    <div class="help-content">
+                        <p>Agar koi issue na ho solve to:</p>
+                        <ul>
+                            <li>Browser console error screenshot lo (F12)</li>
+                            <li>Token format check karo (hf_ se start hona chahiye)</li>
+                            <li>Hugging Face website par directly check karo ki token active hai</li>
+                            <li>Internet connection stable hai confirm karo</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-footer">
+                <button class="btn btn-primary" id="helpOkBtn">✓ OK, SAMAJH Gaya!</button>
             </div>
         </div>
     </div>
 
-    <!-- Glow Effect Elements -->
-    <div class="glow-sphere glow-1"></div>
-    <div class="glow-sphere glow-2"></div>
-    <div class="glow-sphere glow-3"></div>
-
-    <!-- Load all libraries -->
+    <!-- Load Libraries -->
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
@@ -137,7 +401,7 @@
 
     <!-- Custom Scripts -->
     <script src="./script.js"></script>
-    <script type="module" src="./home.js"></script>
+    <script src="./home.js"></script>
 
 </body>
 
