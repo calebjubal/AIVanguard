@@ -1,48 +1,87 @@
-// ========== HUGGING FACE INITIALIZATION ==========
-let apiToken = null;
+// ========== GROQ CLIENT UI ==========
+let groqApiKey = null;
 let currentImageFile = null;
 
-function validateAndSaveToken(token) {
-    try {
-        // Validate token format
-        if (!token || token.trim().length === 0) {
-            updateTokenStatus('✗ Token is empty. Please paste your token', 'error');
-            console.error('Token is empty');
-            return false;
-        }
+const GROQ_STORAGE_KEY = 'groq_api_key';
+const ANALYZE_PROMPT = 'Analyze this image and describe the visual design in plain English. Cover layout, colors, typography, spacing, components, and overall style. If it looks like a UI or website, explain what would be useful for recreating it with Tailwind CSS.';
 
-        if (!token.startsWith('hf_')) {
-            updateTokenStatus('✗ Invalid format. Token must start with "hf_"', 'error');
-            console.error('Token format invalid. Must start with hf_');
-            return false;
-        }
+function updateTokenStatus(message, status) {
+    const statusEl = document.querySelector('.token-status');
+    if (!statusEl) {
+        return;
+    }
 
-        apiToken = token.trim();
-        updateTokenStatus('✓ Connected to Hugging Face', 'success');
-        console.log('✓ Token validated and saved');
-        return true;
-    } catch (error) {
-        console.error('Validation error:', error);
-        updateTokenStatus('✗ Token validation failed', 'error');
-        return false;
+    statusEl.textContent = message;
+
+    if (status === 'success') {
+        statusEl.style.color = '#00ffff';
+    } else if (status === 'error') {
+        statusEl.style.color = '#ff006e';
+    } else if (status === 'info') {
+        statusEl.style.color = '#ffbe0b';
+    } else {
+        statusEl.style.color = '#b0b0ff';
     }
 }
 
-// ========== FILE HANDLING ==========
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const base64 = reader.result.split(',')[1];
-            resolve(base64);
-        };
-        reader.onerror = reject;
-    });
+function updateResultsStatus(status, type = '') {
+    const statusEl = document.querySelector('.results-status');
+    if (!statusEl) {
+        return;
+    }
+
+    statusEl.textContent = status;
+
+    if (type === 'success') {
+        statusEl.style.color = '#00ffff';
+    } else if (type === 'error') {
+        statusEl.style.color = '#ff006e';
+    } else if (type === 'loading') {
+        statusEl.style.color = '#ffbe0b';
+    }
 }
 
+function displayResults(text) {
+    const codeBlock = document.querySelector('.code-block') || document.getElementById('resultCode');
+    if (codeBlock) {
+        codeBlock.textContent = text;
+    }
+}
+
+function loadGroqKey() {
+    const savedKey = localStorage.getItem(GROQ_STORAGE_KEY);
+    if (savedKey && tokenInput?.value === '') {
+        tokenInput.value = savedKey;
+    }
+    groqApiKey = savedKey || null;
+}
+
+function saveGroqKey(key) {
+    const trimmedKey = key.trim();
+    if (!trimmedKey) {
+        localStorage.removeItem(GROQ_STORAGE_KEY);
+        groqApiKey = null;
+        updateTokenStatus('Using server Groq key', 'info');
+        return false;
+    }
+
+    if (!trimmedKey.startsWith('gsk_')) {
+        updateTokenStatus('Invalid format. Groq keys usually start with "gsk_"', 'error');
+        return false;
+    }
+
+    groqApiKey = trimmedKey;
+    localStorage.setItem(GROQ_STORAGE_KEY, trimmedKey);
+    updateTokenStatus('Groq API key saved locally', 'success');
+    return true;
+}
+
+// ========== FILE HANDLING ==========
 async function compressImage(file) {
-    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    if (file.size <= MAX_SIZE) return file;
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size <= MAX_SIZE) {
+        return file;
+    }
 
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -97,13 +136,17 @@ if (uploadZone) {
         e.preventDefault();
         uploadZone.style.background = '';
         const files = e.dataTransfer.files;
-        if (files.length > 0) handleFileSelect(files[0]);
+        if (files.length > 0) {
+            handleFileSelect(files[0]);
+        }
     });
 }
 
 if (fileInput) {
     fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
     });
 }
 
@@ -125,185 +168,91 @@ function handleFileSelect(file) {
     reader.readAsDataURL(file);
 }
 
-// ========== TOKEN MANAGEMENT ==========
+// ========== API KEY MANAGEMENT ==========
 const tokenInput = document.getElementById('tokenInput');
 const saveTokenBtn = document.getElementById('saveTokenBtn');
 
 if (tokenInput) {
-    tokenInput.addEventListener('focus', loadToken);
+    tokenInput.addEventListener('focus', loadGroqKey);
 }
 
 if (saveTokenBtn) {
     saveTokenBtn.addEventListener('click', () => {
-        const token = tokenInput?.value.trim();
-        if (token) {
-            localStorage.setItem('hf_api_token', token);
-            updateTokenStatus('✓ Token Saved Successfully!', 'success');
-            setTimeout(() => {
-                updateTokenStatus('', '');
-            }, 2000);
-        } else {
-            updateTokenStatus('✗ Please enter a token first', 'error');
-        }
+        const key = tokenInput?.value.trim() || '';
+        saveGroqKey(key);
     });
 }
 
-function loadToken() {
-    const token = localStorage.getItem('hf_api_token');
-    if (token && tokenInput?.value === '') {
-        tokenInput.value = token;
+function buildGroqKeyOverride() {
+    const typedKey = tokenInput?.value.trim() || '';
+    if (typedKey) {
+        return typedKey;
     }
-}
 
-function updateTokenStatus(message, status) {
-    const statusEl = document.querySelector('.token-status');
-    if (statusEl) {
-        statusEl.textContent = message;
-        // Apply different colors for different statuses
-        if (status === 'success') {
-            statusEl.style.color = '#00ffff';
-        } else if (status === 'error') {
-            statusEl.style.color = '#ff006e';
-        } else if (status === 'info') {
-            statusEl.style.color = '#ffbe0b';
-        } else {
-            statusEl.style.color = '#b0b0ff';
-        }
-    }
+    return localStorage.getItem(GROQ_STORAGE_KEY) || '';
 }
 
 // ========== IMAGE ANALYSIS ==========
 async function generateImageDescription(file) {
-    if (!apiToken) {
-        alert('❌ Please SAVE your token first!');
-        return;
-    }
-
     try {
-        updateResultsStatus('🔄 Connecting to AI...', 'loading');
+        updateResultsStatus('Sending image to Groq...', 'loading');
 
-        // Compress image if needed
         const compressedFile = await compressImage(file);
-        const base64Data = await fileToBase64(compressedFile);
+        const formData = new FormData();
+        formData.append('image', compressedFile, compressedFile.name || 'upload.jpg');
+        formData.append('prompt', ANALYZE_PROMPT);
 
-        updateResultsStatus('🔄 Analyzing with AI Vision...', 'loading');
-        console.log('Sending request to Hugging Face API...');
+        const apiKeyOverride = buildGroqKeyOverride();
+        if (apiKeyOverride) {
+            formData.append('api_key', apiKeyOverride);
+        }
 
-        // Set a timeout of 60 seconds
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-        // Try primary model first (faster)
-        let modelEndpoint = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large';
-        
-        let response = await fetch(modelEndpoint, {
-            headers: { Authorization: `Bearer ${apiToken}` },
+        const response = await fetch('/api/analyze', {
             method: 'POST',
-            body: JSON.stringify({ 
-                inputs: base64Data
-            }),
+            body: formData,
             signal: controller.signal
         });
 
         clearTimeout(timeoutId);
-        console.log('Response status:', response.status);
 
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('API Error:', errorData);
-            
-            if (response.status === 401) {
-                throw new Error('❌ Invalid Token - Check if token is correct');
-            } else if (response.status === 503) {
-                throw new Error('⏳ Model is loading (first time use takes 1-5 mins). Please wait and try again in 2 minutes');
-            } else if (response.status === 429) {
-                throw new Error('⏳ API is busy. Please wait 1 minute and try again');
-            } else if (response.status === 400) {
-                throw new Error('❌ Invalid image format. Try PNG, JPG, or WebP');
-            } else {
-                throw new Error(`API Error ${response.status}`);
-            }
+            throw new Error(data.error || `Request failed (${response.status})`);
         }
 
-        const result = await response.json();
-        console.log('API Response:', result);
-
-        let description = '';
-        
-        // Handle different response formats
-        if (Array.isArray(result) && result.length > 0) {
-            if (result[0]?.generated_text) {
-                description = result[0].generated_text;
-            } else if (typeof result[0] === 'string') {
-                description = result[0];
-            } else if (result[0].error) {
-                throw new Error(result[0].error);
-            }
-        } else if (result.generated_text) {
-            description = result.generated_text;
-        } else if (result[0]?.error) {
-            throw new Error(result[0].error);
-        } else if (typeof result === 'string') {
-            description = result;
-        } else {
-            description = JSON.stringify(result);
-        }
-
-        if (!description || description.trim().length === 0) {
-            throw new Error('❌ Empty response from API. Please try with different image');
-        }
-
-        // Clean up the response
-        if (description.startsWith('<|image_1|>')) {
-            description = description.replace('<|image_1|>', '').trim();
+        const description = (data.description || '').trim();
+        if (!description) {
+            throw new Error('Empty response from Groq');
         }
 
         displayResults(description);
-        updateResultsStatus('✓ Analysis Complete', 'success');
+        updateResultsStatus('Analysis Complete', 'success');
     } catch (error) {
         console.error('Analysis error details:', error);
-        
-        let errorMsg = '❌ Analysis Failed:\n\n';
+
+        let errorMsg = 'Analysis Failed:\n\n';
 
         if (error.name === 'AbortError') {
-            errorMsg = '⏱️ Request Timeout (over 60 seconds)\n\n→ Model might be loading\n→ This can take 1-5 mins on first use\n→ Try again in 2 minutes';
-        } else if (error.message?.includes('Invalid Token')) {
-            errorMsg = '❌ Invalid API Token\n\n→ Token check karke naya token generate karo\n→ https://huggingface.co/settings/tokens';
-        } else if (error.message?.includes('Invalid image')) {
-            errorMsg = '❌ Invalid Image Format\n\n→ PNG, JPG, ya WebP use karo\n→ Size 5MB se kam hona chahiye';
-        } else if (error.message?.includes('loading') || error.message?.includes('503')) {
-            errorMsg = '⏳ Model Loading Ho Raha Hai\n\n→ Pehli baar use karte time models load hote hain\n→ 2-5 minutes wait karo\n→ Phir dobara try karo\n\nYe ek-ek baar load hote hain, baad mein fast hoga!';
-        } else if (error.message?.includes('busy') || error.message?.includes('429')) {
-            errorMsg = '🚦 API Overloaded\n\n→ Bahut log use kar rahe hain\n→ 1 minute wait karo\n→ Dobara try karo';
+            errorMsg = 'Request timed out.\n\n-> Groq may be busy\n-> Try again in a minute';
+        } else if (error.message?.includes('GROQ_API_KEY') || error.message?.includes('api key') || error.message?.includes('key')) {
+            errorMsg = 'Invalid Groq API Key\n\n-> Check that it starts with gsk_\n-> Or set GROQ_API_KEY in .env';
+        } else if (error.message?.includes('image type') || error.message?.includes('Unsupported image')) {
+            errorMsg = 'Invalid Image Format\n\n-> Use PNG, JPG, or WebP\n-> Keep the file under 5MB if possible';
+        } else if (error.message?.includes('busy') || error.message?.includes('rate') || error.message?.includes('503')) {
+            errorMsg = 'Groq is Busy\n\n-> Wait a moment and try again\n-> Large requests can take longer';
         } else if (error.message?.includes('Network') || error.message?.includes('Failed to fetch')) {
-            errorMsg = '🌐 Network Error\n\n→ Internet connection check karo\n→ VPN on hai to band karo\n→ Page refresh karo (F5)';
+            errorMsg = 'Network Error\n\n-> Check your internet connection\n-> Try refreshing the page';
+        } else if (error.message?.includes('Empty response')) {
+            errorMsg = 'Groq returned an empty response\n\n-> Try a different image\n-> Or run the request again';
         } else {
             errorMsg += error.message || 'Unknown error occurred';
         }
 
         displayResults(errorMsg);
-        updateResultsStatus('✗ Failed', 'error');
-    }
-}
-
-function updateResultsStatus(status, type = '') {
-    const statusEl = document.querySelector('.results-status');
-    if (statusEl) {
-        statusEl.textContent = status;
-        if (type === 'success') {
-            statusEl.style.color = '#00ffff';
-        } else if (type === 'error') {
-            statusEl.style.color = '#ff006e';
-        } else if (type === 'loading') {
-            statusEl.style.color = '#ffbe0b';
-        }
-    }
-}
-
-function displayResults(text) {
-    const codeBlock = document.querySelector('.code-block') || document.getElementById('resultCode');
-    if (codeBlock) {
-        codeBlock.textContent = text;
+        updateResultsStatus('Failed', 'error');
     }
 }
 
@@ -314,17 +263,21 @@ const cancelBtn = document.getElementById('cancelBtn');
 const optionsPanel = document.querySelector('.options-panel');
 
 if (initializeBtn) {
-    initializeBtn.addEventListener('click', async () => {
-        const token = tokenInput?.value.trim();
-        if (!token) {
-            alert('Please enter a Hugging Face API token');
-            return;
+    initializeBtn.addEventListener('click', () => {
+        const key = tokenInput?.value.trim() || '';
+
+        if (key) {
+            const success = saveGroqKey(key);
+            if (!success) {
+                return;
+            }
+        } else if (groqApiKey) {
+            updateTokenStatus('Groq API key loaded from local storage', 'success');
+        } else {
+            updateTokenStatus('Using server Groq key', 'info');
         }
 
-        const success = validateAndSaveToken(token);
-        if (success) {
-            optionsPanel?.classList.add('active');
-        }
+        optionsPanel?.classList.add('active');
     });
 }
 
@@ -356,7 +309,7 @@ if (copyBtn) {
             try {
                 await navigator.clipboard.writeText(codeBlock.textContent);
                 const originalText = copyBtn.textContent;
-                copyBtn.textContent = '✓ Copied!';
+                copyBtn.textContent = 'Copied!';
                 setTimeout(() => {
                     copyBtn.textContent = originalText;
                 }, 2000);
@@ -378,15 +331,14 @@ function animateFeatureCards() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadToken();
+    loadGroqKey();
     animateFeatureCards();
 
-    // Animate title characters
     const titleText = document.querySelector('.hero-title');
     if (titleText) {
         const text = titleText.textContent;
         titleText.innerHTML = '';
-        [...text].forEach((char, i) => {
+        [...text].forEach((char) => {
             const span = document.createElement('span');
             span.className = 'title-char';
             span.textContent = char;
@@ -425,7 +377,6 @@ if (helpOkBtn) {
     });
 }
 
-// Close help modal when clicking outside
 if (helpModal) {
     helpModal.addEventListener('click', (e) => {
         if (e.target === helpModal) {

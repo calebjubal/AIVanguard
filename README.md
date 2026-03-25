@@ -1,103 +1,23 @@
-# WINDIFY - Gemini API Setup Guide
+# WINDIFY
 
-## ✅ Features Implemented
+A Flask app that uploads an image, sends it to Groq, and returns a text analysis using `meta-llama/llama-4-scout-17b-16e-instruct`.
 
-Your Tailwind CSS generator now has:
-- ✓ **Image Upload** - Click, drag & drop, or paste from clipboard
-- ✓ **Gemini API Integration** - AI-powered CSS generation from images
-- ✓ **Generate Options**:
-  - Responsive design
-  - Dark mode support
-  - Animations
-  - Code optimization
-- ✓ **Real-time Feedback** - Loading states and notifications
-- ✓ **Copy to Clipboard** - Instant code copying
-- ✓ **Smooth Animations** - Professional UI feedback
+## Layout
 
----
+- `app.py` runs the Flask server and Groq analysis endpoint.
+- `templates/` holds the HTML pages.
+- `styles/` holds the CSS files.
+- `scripts/` holds the browser-side JavaScript.
 
-## 🔑 Setting Up Your API Key
+## Setup
 
-### Option 1: First Time Use (Recommended)
-1. Click "START GENERATING" button
-2. Upload your design image
-3. Click "Confirm & Generate"
-4. When prompted, paste your **Gemini API Key**
-5. The key will be saved securely in your browser
+1. Put your Groq key in `.env` as `GROQ_API_KEY=...`.
+2. Install dependencies with `pip install -r requirements.txt`.
+3. Start the app with `python app.py`.
+4. Open `http://127.0.0.1:5000/index.html` in your browser.
 
-### Option 2: Enter API Key in Code
-In `scripts/home.js`, replace this line:
-```javascript
-const GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || window.GEMINI_API_KEY;
-```
+## Notes
 
-With:
-```javascript
-const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
-```
-
-### Option 3: Environment Variable
-Set it in your deployment environment:
-```bash
-GEMINI_API_KEY=your_key_here
-```
-
----
-
-## 🎯 How to Use
-
-1. **Upload an Image**
-   - Click the upload area
-   - Drag & drop a screenshot
-   - Or paste (Ctrl+V or Cmd+V)
-
-2. **Select Options**
-   - Click "START GENERATING"
-   - Choose your preferences
-   - Click "Confirm & Generate"
-
-3. **Get Your CSS**
-   - Wait for AI to generate
-   - Click "Copy CSS" to copy code
-   - Paste into your project
-
----
-
-## ⚙️ Getting Your Gemini API Key
-
-1. Visit: https://aistudio.google.com/app/apikey
-2. Click "Create API Key"
-3. Copy the generated key
-4. Use it in WINDIFY
-
----
-
-## 🐛 Troubleshooting
-
-**"API key is not set"**
-- Make sure you entered your key correctly
-- Check it doesn't have extra spaces
-- Generate a new key from Google AI Studio
-
-**"Not generating code"**
-- Try a clearer, simpler image
-- Ensure image is not too complex
-- Wait longer (can take 30+ seconds)
-
-**"Generation failed"**
-- Check console (F12) for error details
-- Verify API key is valid
-- Try a different image
-
----
-
-## 📝 Notes
-
-- API keys are stored in browser localStorage (local device only)
-- Never share your API key publicly
-- Each generation uses API credits
-- Check Google's pricing: https://ai.google.dev/pricing
-
----
-
-**✨ Ready to generate? Upload an image and see the magic!**
+- The Groq key field in the UI is optional if `GROQ_API_KEY` is already set on the server.
+- The browser sends images to `/api/analyze`, and the Flask app calls Groq from there.
+- The model used by default is `meta-llama/llama-4-scout-17b-16e-instruct`.

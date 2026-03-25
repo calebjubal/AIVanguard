@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIVanguard - Image to Text Generator</title>
+    <title>WINDIFY - Groq Image Analyzer</title>
     <link rel="stylesheet" href="../styles/home.css">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
 </head>
@@ -59,7 +59,7 @@
                     </h1>
                 </div>
                 <h2 class="hero-subtitle">VISION POWERED BY QUANTUM AI</h2>
-                <p class="hero-description">Upload. Analyze. Understand. Powered by Hugging Face Intelligence</p>
+                <p class="hero-description">Upload. Analyze. Understand. Powered by Groq Intelligence</p>
                 <div class="hero-accent">
                     <div class="accent-line"></div>
                     <span class="accent-text">[ SYSTEM ONLINE ]</span>
@@ -100,7 +100,7 @@
                     <div class="panel-footer">
                         <button class="btn btn-primary" id="initializeBtn">
                             <span class="btn-icon">⚡</span>
-                            <span class="btn-text">INITIALIZE</span>
+                            <span class="btn-text">CONNECT GROQ</span>
                             <span class="btn-glow"></span>
                         </button>
                     </div>
@@ -110,18 +110,18 @@
                 <div class="panel right-panel">
                     <div class="panel-header">
                         <div class="header-icon">🔐</div>
-                        <h3>ACCESS TOKEN</h3>
+                        <h3>GROQ KEY</h3>
                         <div class="header-accent"></div>
                     </div>
                     
                     <div class="panel-content">
                         <div class="token-input-wrapper">
-                            <label for="tokenInput" class="token-label">HUGGING FACE API TOKEN</label>
+                            <label for="tokenInput" class="token-label">GROQ API KEY (OPTIONAL)</label>
                             <div class="input-group">
                                 <input 
                                     id="tokenInput" 
                                     type="password" 
-                                    placeholder="hf_xxxxxxxxxxxxxxxxxxxx"
+                                    placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
                                     class="token-input"
                                 />
                                 <button id="saveTokenBtn" class="btn btn-secondary" style="white-space: nowrap;">
@@ -131,8 +131,8 @@
                             <p class="token-status"></p>
                         </div>
                         <p class="token-info">
-                            Get your token at 
-                            <a href="https://huggingface.co/settings/tokens" target="_blank" class="info-link">huggingface.co</a>
+                            Leave this blank to use the server key from <code>.env</code>, or paste your own Groq key from 
+                            <a href="https://console.groq.com/keys" target="_blank" class="info-link">console.groq.com</a>
                         </p>
                     </div>
                 </div>
@@ -143,7 +143,7 @@
                 <div class="options-header">
                     <h3>[ CONFIRM ANALYSIS ]</h3>
                 </div>
-                <p class="options-message">Ready to analyze your image with Qwen Vision AI?</p>
+                <p class="options-message">Ready to analyze your image with Groq Vision AI?</p>
                 <div style="display: flex; gap: 1rem; justify-content: center;">
                     <button class="btn btn-primary" id="confirmBtn">
                         <span class="btn-icon">🚀</span>
@@ -185,7 +185,7 @@
                     <div class="feature-number">01</div>
                     <div class="feature-icon">🖼️</div>
                     <h4>VISION</h4>
-                    <p>Advanced image recognition powered by Qwen's multi-modal AI</p>
+                    <p>Advanced image recognition powered by Groq's vision-capable Llama model</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-number">02</div>
@@ -197,7 +197,7 @@
                     <div class="feature-number">03</div>
                     <div class="feature-icon">🤖</div>
                     <h4>QUANTUM AI</h4>
-                    <p>Next-generation AI models from Hugging Face</p>
+                    <p>Next-generation AI models from Groq</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-number">04</div>
@@ -234,13 +234,12 @@
                     <h3>🚀 Getting Started (Shuru Kaise Karein)</h3>
                     <div class="help-content">
                         <ol>
-                            <li><strong>Get API Token:</strong> https://huggingface.co/settings/tokens par jaao</li>
-                            <li><strong>Create New Token:</strong> "New Token" button click karo</li>
-                            <li><strong>Copy Token:</strong> Token copy karo (hf_ se start hota hai)</li>
-                            <li><strong>Paste Here:</strong> "ACCESS TOKEN" panel mein paste karo</li>
+                            <li><strong>Get Groq Key:</strong> https://console.groq.com/keys par jaao</li>
+                            <li><strong>Create or Copy Key:</strong> Naya key generate karo ya existing key copy karo</li>
+                            <li><strong>Paste Here:</strong> "GROQ KEY" panel mein paste karo</li>
                             <li><strong>Click SAVE:</strong> Save button click karo</li>
                             <li><strong>Upload Image:</strong> Koi bhi image upload karo</li>
-                            <li><strong>Click INITIALIZE:</strong> "INITIALIZE" button ko click karo</li>
+                            <li><strong>Click CONNECT GROQ:</strong> "CONNECT GROQ" button ko click karo</li>
                             <li><strong>Launch Analysis:</strong> Popup mein "LAUNCH ANALYSIS" click karo</li>
                         </ol>
                     </div>
@@ -251,25 +250,25 @@
                     <h3>⚠️ Common Errors (Agar Error Aaye)</h3>
                     <div class="help-content">
                         <div class="error-item">
-                            <h4>❌ "Token must start with hf_"</h4>
-                            <p><strong>Matlab:</strong> Token galat format mein hai</p>
-                            <p><strong>Fix:</strong> Pura token copy karo jo hf_ se start hota hai. Koi part miss na ho</p>
+                            <h4>❌ "Groq key must start with gsk_"</h4>
+                            <p><strong>Matlab:</strong> Key galat format mein hai</p>
+                            <p><strong>Fix:</strong> Pura key copy karo jo gsk_ se start hota hai. Koi part miss na ho</p>
                         </div>
 
                         <div class="error-item">
-                            <h4>❌ "Invalid API Token"</h4>
-                            <p><strong>Matlab:</strong> Token expired hai ya galat hai</p>
+                            <h4>❌ "Invalid Groq API Key"</h4>
+                            <p><strong>Matlab:</strong> Key expired hai ya galat hai</p>
                             <p><strong>Fix:</strong><br>
-                                → https://huggingface.co/settings/tokens par jaao<br>
-                                → Purana token delete karo<br>
-                                → Naya token create karo<br>
-                                → Naya token paste karke save karo
+                                → https://console.groq.com/keys par jaao<br>
+                                → Purana key delete karo<br>
+                                → Naya key create karo<br>
+                                → Naya key paste karke save karo
                             </p>
                         </div>
 
                         <div class="error-item">
                             <h4>❌ "Service Overloaded" ya "Model Unavailable"</h4>
-                            <p><strong>Matlab:</strong> Hugging Face ka server busy hai</p>
+                            <p><strong>Matlab:</strong> Groq service busy hai</p>
                             <p><strong>Fix:</strong><br>
                                 → 30 second wait karo<br>
                                 → Page refresh karo (F5)<br>
@@ -317,7 +316,7 @@
                         <h4>✅ Pehle Yeh Check Karo:</h4>
                         <ul>
                             <li>Internet connection is working</li>
-                            <li>Token starts with "hf_" (copy-paste properly)</li>
+                            <li>Groq key starts with "gsk_" (copy-paste properly)</li>
                             <li>Image format PNG/JPG/WebP hai</li>
                             <li>Image size 5MB se kam hai</li>
                             <li>Browser developer console (F12) mein koi error dikhe to report karo</li>
@@ -331,11 +330,11 @@
                             <li>Iss error ko apne help kar sakte ho par detailed information milti hai</li>
                         </ol>
 
-                        <h4>🔐 Token Security:</h4>
+                        <h4>🔐 Groq Key Security:</h4>
                         <ul>
-                            <li>Token browser ke localStorage mein save hota hai (sirf tumhara device)</li>
-                            <li>Kisi ko apna token share mat karo❌</li>
-                            <li>Token kisi bhi server par nahi bheja jata ✅</li>
+                            <li>Groq key browser ke localStorage mein save hota hai (sirf tumhara device)</li>
+                            <li>Kisi ko apna key share mat karo❌</li>
+                            <li>Key kisi bhi server par nahi bheja jata ✅</li>
                             <li>Share karne se pehle private browser tab mein check karo</li>
                         </ul>
                     </div>
@@ -346,13 +345,13 @@
                     <h3>❓ Frequently Asked Questions (FAQs)</h3>
                     <div class="help-content">
                         <div class="faq-item">
-                            <h4>Q: Mera token kahan save hota hai?</h4>
+                            <h4>Q: Mera Groq key kahan save hota hai?</h4>
                             <p>A: Browser ke localStorage mein sirf tumhare device par. Kisi server par nahi</p>
                         </div>
 
                         <div class="faq-item">
                             <h4>Q: Kya free hai ye service?</h4>
-                            <p>A: Haan! Hugging Face free hai. Bas account banana padta hai</p>
+                            <p>A: Groq account aur rate limits plan ke hisaab se depend karte hain. Apne dashboard par check karo</p>
                         </div>
 
                         <div class="faq-item">
@@ -379,8 +378,8 @@
                         <p>Agar koi issue na ho solve to:</p>
                         <ul>
                             <li>Browser console error screenshot lo (F12)</li>
-                            <li>Token format check karo (hf_ se start hona chahiye)</li>
-                            <li>Hugging Face website par directly check karo ki token active hai</li>
+                            <li>Groq key format check karo (gsk_ se start hona chahiye)</li>
+                            <li>Groq console par directly check karo ki key active hai</li>
                             <li>Internet connection stable hai confirm karo</li>
                         </ul>
                     </div>
