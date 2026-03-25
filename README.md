@@ -26,7 +26,7 @@ Your Tailwind CSS generator now has:
 5. The key will be saved securely in your browser
 
 ### Option 2: Enter API Key in Code
-In `home.js`, replace this line:
+In `scripts/home.js`, replace this line:
 ```javascript
 const GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || window.GEMINI_API_KEY;
 ```

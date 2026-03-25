@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ========== BACK BUTTON ==========
 const backBtn = document.querySelector('.back-btn');
 if (backBtn) {
-    backBtn.href = 'index.html';
+    backBtn.href = './index.html';
 }
 
 // ========== HELP MODAL ==========
